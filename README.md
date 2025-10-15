@@ -247,5 +247,343 @@ function sleep(ms) {
 
 ---
 
-İstəsən sənin üçün bu kodu **addım-addım animasiyalı izahla** və ya **sadələşdirilmiş versiya ilə** də yaza bilərəm (məsələn, yalnız BFS ilə).
-İstəyirsən elə birini tərtib edim?
+JS_derinden izah
+
+Əla 👍
+Gəlin indi **yalnız JavaScript hissəsini** addım-addım, sadə və başa düşülən şəkildə izah edək.
+Bu JS kodu 3 əsas hissədən ibarətdir:
+
+1. 🧱 **Grid (labirint) yaradılması**
+2. 🔁 **BFS və DFS alqoritmlərinin işləməsi**
+3. 🎨 **Yolun (path) göstərilməsi və animasiya**
+
+---
+
+## 🧱 1️⃣ Əsas dəyişənlər və gridin hazırlanması
+
+```js
+const ROWS = 10;
+const COLS = 10;
+let grid = [];
+let isRunning = false;
+```
+
+* **ROWS**, **COLS** → grid 10x10 ölçüsündə olacaq.
+* **grid** → hər xananın məlumatını (div elementi, ziyarət olub-olmaması, valideynini) saxlayır.
+* **isRunning** → birdən çox alqoritm eyni anda işləməsin deyə qoruma üçün istifadə olunur.
+
+---
+
+### 🧩 Labirintin xəritəsi
+
+```js
+const maze = [
+  [0,0,0,1,0,0,0,0,0,0],
+  [0,1,0,1,0,1,1,1,1,0],
+  ...
+];
+```
+
+* Bu 2D massivdir.
+
+  * `0` → keçilə bilən yol
+  * `1` → divar
+* Yəni, alqoritm yalnız `0` olan xanalarla hərəkət edə bilər.
+
+---
+
+### 🚩 Başlanğıc və son nöqtə
+
+```js
+const start = {row: 0, col: 0};
+const end = {row: 9, col: 9};
+```
+
+* `start` → yuxarı sol künc (S)
+* `end` → aşağı sağ künc (H)
+
+---
+
+### 🧠 `initGrid()` funksiyası
+
+```js
+function initGrid() {
+  const gridEl = document.getElementById('grid');
+  gridEl.innerHTML = '';
+  grid = [];
+
+  for (let i = 0; i < ROWS; i++) {
+    grid[i] = [];
+    for (let j = 0; j < COLS; j++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.id = `cell-${i}-${j}`;
+
+      if (maze[i][j] === 1) {
+        cell.classList.add('wall');
+      } else if (i === start.row && j === start.col) {
+        cell.classList.add('start');
+        cell.textContent = 'S';
+      } else if (i === end.row && j === end.col) {
+        cell.classList.add('end');
+        cell.textContent = 'H';
+      }
+
+      gridEl.appendChild(cell);
+      grid[i][j] = {
+        element: cell,
+        visited: false,
+        parent: null
+      };
+    }
+  }
+}
+```
+
+🟢 **Nə edir:**
+
+1. Əvvəlcə HTML-də grid-i (boş konteyneri) təmizləyir.
+2. Sonra hər bir xana üçün `div` elementi yaradır.
+3. Əgər `maze[i][j]` → `1` → divar olur.
+4. Əgər başlanğıcdır → yaşıl (S).
+5. Əgər sondur → qırmızı (H).
+6. Hər bir xananın məlumatı `grid` massivinə saxlanılır:
+
+   * `element`: DOM elementi
+   * `visited`: ziyarət olunub ya yox
+   * `parent`: hansı xananın içindən gəlib (yolu tapmaq üçün)
+
+---
+
+## 🔁 2️⃣ Qonşu xanaları tapmaq
+
+```js
+function getNeighbors(row, col) {
+  const neighbors = [];
+  const directions = [[0,1], [1,0], [0,-1], [-1,0]]; // sağ, aşağı, sol, yuxarı
+
+  for (const [dr, dc] of directions) {
+    const newRow = row + dr;
+    const newCol = col + dc;
+
+    if (
+      newRow >= 0 && newRow < ROWS &&
+      newCol >= 0 && newCol < COLS &&
+      maze[newRow][newCol] === 0 &&
+      !grid[newRow][newCol].visited
+    ) {
+      neighbors.push({row: newRow, col: newCol});
+    }
+  }
+
+  return neighbors;
+}
+```
+
+🟢 **İzah:**
+
+* Verilmiş `row, col` üçün 4 istiqamət yoxlanılır (sağ, aşağı, sol, yuxarı).
+* Hər biri:
+
+  * grid-in içində olmalıdır,
+  * divar (`1`) olmamalıdır,
+  * ziyarət olunmamış olmalıdır.
+* Uyğun xanalar **neighbors** (qonşular) kimi qaytarılır.
+
+---
+
+## 🔄 3️⃣ BFS (Genişinə Axtarış)
+
+```js
+async function startBFS() {
+  if (isRunning) return;
+  isRunning = true;
+
+  document.getElementById('algorithm').textContent = 'BFS';
+  document.getElementById('status').textContent = 'İşləyir...';
+
+  const queue = [{row: start.row, col: start.col}];
+  grid[start.row][start.col].visited = true;
+  let visitedCount = 1;
+
+  while (queue.length > 0) {
+    const current = queue.shift(); // Queue - əvvəldən götür
+    const cell = grid[current.row][current.col];
+
+    if (!(current.row === start.row && current.col === start.col)) {
+      cell.element.classList.add('current');
+      await sleep(100);
+      cell.element.classList.remove('current');
+      if (!(current.row === end.row && current.col === end.col)) {
+        cell.element.classList.add('visited');
+      }
+    }
+
+    if (current.row === end.row && current.col === end.col) {
+      await drawPath(current);
+      document.getElementById('status').textContent = '✓ Tapıldı!';
+      isRunning = false;
+      return;
+    }
+
+    const neighbors = getNeighbors(current.row, current.col);
+    for (const neighbor of neighbors) {
+      grid[neighbor.row][neighbor.col].visited = true;
+      grid[neighbor.row][neighbor.col].parent = current;
+      queue.push(neighbor);
+      visitedCount++;
+      document.getElementById('visited').textContent = visitedCount;
+    }
+  }
+
+  document.getElementById('status').textContent = '✗ Yol tapılmadı';
+  isRunning = false;
+}
+```
+
+🟢 **İzah:**
+
+1. Əgər artıq alqoritm işləyirsə (`isRunning`), təkrar başlamasın.
+2. Başlanğıc xananı növbəyə əlavə edir (`queue`).
+3. `while` dövrü: növbədə element qaldıqca işləyir.
+4. `queue.shift()` → növbənin **əvvəlindən** götürür (FIFO).
+5. Cari xananı göstərmək üçün animasiya olunur (`await sleep(100)`).
+6. Əgər hədəf xanadırsa → `drawPath()` çağırılır və alqoritm bitir.
+7. Əks halda qonşular tapılır → hər bir qonşu:
+
+   * **ziyaret** = true
+   * **parent** = cari xana
+   * növbəyə əlavə olunur (`queue.push`).
+
+BFS **səviyyə-səviyyə** hərəkət etdiyi üçün ən qısa yolu tapır.
+
+---
+
+## 🌀 4️⃣ DFS (Dərinliyinə Axtarış)
+
+```js
+async function startDFS() {
+  if (isRunning) return;
+  isRunning = true;
+
+  document.getElementById('algorithm').textContent = 'DFS';
+  document.getElementById('status').textContent = 'İşləyir...';
+
+  const stack = [{row: start.row, col: start.col}];
+  grid[start.row][start.col].visited = true;
+  let visitedCount = 1;
+
+  while (stack.length > 0) {
+    const current = stack.pop(); // Stack - sondan götür
+    const cell = grid[current.row][current.col];
+
+    if (!(current.row === start.row && current.col === start.col)) {
+      cell.element.classList.add('current');
+      await sleep(100);
+      cell.element.classList.remove('current');
+      if (!(current.row === end.row && current.col === end.col)) {
+        cell.element.classList.add('visited');
+      }
+    }
+
+    if (current.row === end.row && current.col === end.col) {
+      await drawPath(current);
+      document.getElementById('status').textContent = '✓ Tapıldı!';
+      isRunning = false;
+      return;
+    }
+
+    const neighbors = getNeighbors(current.row, current.col);
+    for (const neighbor of neighbors) {
+      grid[neighbor.row][neighbor.col].visited = true;
+      grid[neighbor.row][neighbor.col].parent = current;
+      stack.push(neighbor);
+      visitedCount++;
+      document.getElementById('visited').textContent = visitedCount;
+    }
+  }
+
+  document.getElementById('status').textContent = '✗ Yol tapılmadı';
+  isRunning = false;
+}
+```
+
+🟢 **İzah:**
+
+* BFS-ə çox bənzəyir, amma fərq budur:
+
+  * **queue.shift()** əvəzinə **stack.pop()** istifadə olunur.
+  * Yəni, **ən son daxil edilən xana** ilk çıxarılır → bu DFS-in “dərin” axtarış davranışını yaradır.
+* DFS bəzən daha tez olur, amma qısa yolu tapmaya bilər.
+
+---
+
+## 🎨 5️⃣ Yolun göstərilməsi
+
+```js
+async function drawPath(endNode) {
+  const path = [];
+  let current = endNode;
+
+  while (current !== null) {
+    path.unshift(current);
+    current = grid[current.row][current.col].parent;
+  }
+
+  for (let i = 1; i < path.length - 1; i++) {
+    const cell = grid[path[i].row][path[i].col];
+    cell.element.classList.remove('visited');
+    cell.element.classList.add('path');
+    await sleep(50);
+  }
+
+  document.getElementById('pathLength').textContent = path.length;
+}
+```
+
+🟢 **İzah:**
+
+* `endNode`-dan başlayır və **parent** vasitəsilə geriyə (başlanğıca) qədər gedir.
+* Hər xananı `path` massivinə əlavə edir.
+* Sonra ardıcıl şəkildə hər xananı mavi rənglə işarələyir (tapılmış yol kimi).
+
+---
+
+## 🕐 6️⃣ Gecikmə funksiyası
+
+```js
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+```
+
+➡️ Bu sadəcə animasiya üçün `await sleep(100)` şəklində istifadə olunur, yəni 0.1 saniyəlik fasilə verir.
+
+---
+
+## 🧩 7️⃣ Grid-in başlanğıcda yaradılması
+
+```js
+initGrid();
+```
+
+Səhifə açılan kimi grid-in ilkin vəziyyəti (S, H və divarlar) göstərilir.
+
+---
+
+## 🔚 Nəticə
+
+| Funksiya         | Nə edir                                                |
+| ---------------- | ------------------------------------------------------ |
+| `initGrid()`     | Grid yaradır, divarları və start/end təyin edir        |
+| `getNeighbors()` | Qonşu xanaları tapır                                   |
+| `startBFS()`     | BFS alqoritmini işlədir (növbə ilə, ən qısa yol tapır) |
+| `startDFS()`     | DFS alqoritmini işlədir (stack ilə, dərin axtarır)     |
+| `drawPath()`     | Tapılmış yolu rənglə göstərir                          |
+| `sleep()`        | Animasiya üçün gecikmə yaradır                         |
+
+---
+
+İstəsən bu kodun içində **console.log** əlavə edərək sətir-sətir necə işlədiyini real vaxtda göstərən bir versiyasını da yaza bilərəm — yəni ekranda hansı xanaya keçdiyini izah edən.
+İstəyirsən elə bir izahlı (addım-addım console log ilə) versiya hazırlayım?
+
