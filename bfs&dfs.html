@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BFS və DFS Alqoritmləri</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-bfs {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .btn-bfs:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76,175,80,0.4);
+        }
+        
+        .btn-dfs {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .btn-dfs:hover {
+            background: #0b7dda;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(33,150,243,0.4);
+        }
+        
+        .btn-reset {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-reset:hover {
+            background: #da190b;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(244,67,54,0.4);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .grid-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(10, 50px);
+            gap: 2px;
+            background: #ddd;
+            padding: 2px;
+            border-radius: 10px;
+        }
+        
+        .cell {
+            width: 50px;
+            height: 50px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+            transition: all 0.3s;
+            border-radius: 4px;
+        }
+        
+        .cell.wall {
+            background: #333;
+        }
+        
+        .cell.start {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .cell.end {
+            background: #f44336;
+            color: white;
+        }
+        
+        .cell.visited {
+            background: #FFE082;
+            animation: visitAnim 0.3s;
+        }
+        
+        .cell.path {
+            background: #64B5F6;
+            animation: pathAnim 0.5s;
+        }
+        
+        .cell.current {
+            background: #FF9800;
+            transform: scale(1.1);
+        }
+        
+        @keyframes visitAnim {
+            from {
+                transform: scale(0.3);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes pathAnim {
+            from {
+                transform: scale(0.5);
+            }
+            to {
+                transform: scale(1);
+            }
+        }
+        
+        .info {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .info h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+        }
+        
+        .explanation {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 5px solid #2196F3;
+        }
+        
+        .explanation h3 {
+            color: #1976D2;
+            margin-bottom: 10px;
+        }
+        
+        .explanation ul {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 BFS və DFS Alqoritmləri</h1>
+        <p class="subtitle">Breadth-First Search və Depth-First Search Vizualizasiyası</p>
+        
+        <div class="controls">
+            <button class="btn-bfs" onclick="startBFS()">▶ BFS Başlat (Genişinə)</button>
+            <button class="btn-dfs" onclick="startDFS()">▶ DFS Başlat (Dərininə)</button>
+            <button class="btn-reset" onclick="resetGrid()">🔄 Sıfırla</button>
+        </div>
+        
+        <div class="grid-container">
+            <div class="grid" id="grid"></div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4CAF50;"></div>
+                <span>Başlanğıc (S)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #f44336;"></div>
+                <span>Hədəf (H)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #333;"></div>
+                <span>Divar</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FFE082;"></div>
+                <span>Ziyarət edildi</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #64B5F6;"></div>
+                <span>Yol</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FF9800;"></div>
+                <span>Cari</span>
+            </div>
+        </div>
+        
+        <div class="info">
+            <h3>📊 Statistika</h3>
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-label">Alqoritm</div>
+                    <div class="stat-value" id="algorithm">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Ziyarət edilən xanalar</div>
+                    <div class="stat-value" id="visited">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Yol uzunluğu</div>
+                    <div class="stat-value" id="pathLength">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Status</div>
+                    <div class="stat-value" id="status">Gözləyir</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="explanation">
+            <h3>💡 Alqoritmlər haqqında</h3>
+            <ul>
+                <li><strong>BFS (Genişinə İlk Axtarış):</strong> Qonşu xanaları səviyyə-səviyyə yoxlayır. Queue (növbə) strukturundan istifadə edir. Ən qısa yolu tapır.</li>
+                <li><strong>DFS (Dərininə İlk Axtarış):</strong> Bir istiqamətdə ən sonuna qədər gedir, sonra geri qayıdır. Stack strukturundan istifadə edir. Sürətli ola bilər amma həmişə ən qısa yolu tapmır.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const ROWS = 10;
+        const COLS = 10;
+        let grid = [];
+        let isRunning = false;
+        
+        // Labirint dizaynı (1 = divar, 0 = yol)
+        const maze = [
+            [0,0,0,1,0,0,0,0,0,0],
+            [0,1,0,1,0,1,1,1,1,0],
+            [0,1,0,0,0,0,0,0,1,0],
+            [0,1,1,1,1,1,1,0,1,0],
+            [0,0,0,0,0,0,0,0,0,0],
+            [1,1,1,1,1,1,1,1,1,0],
+            [0,0,0,0,0,0,0,0,0,0],
+            [0,1,1,1,1,1,1,1,1,1],
+            [0,0,0,0,0,0,0,0,0,0],
+            [1,1,1,1,1,1,1,1,1,0]
+        ];
+        
+        const start = {row: 0, col: 0};
+        const end = {row: 9, col: 9};
+        
+        function initGrid() {
+            const gridEl = document.getElementById('grid');
+            gridEl.innerHTML = '';
+            grid = [];
+            
+            for (let i = 0; i < ROWS; i++) {
+                grid[i] = [];
+                for (let j = 0; j < COLS; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.id = `cell-${i}-${j}`;
+                    
+                    if (maze[i][j] === 1) {
+                        cell.classList.add('wall');
+                    } else if (i === start.row && j === start.col) {
+                        cell.classList.add('start');
+                        cell.textContent = 'S';
+                    } else if (i === end.row && j === end.col) {
+                        cell.classList.add('end');
+                        cell.textContent = 'H';
+                    }
+                    
+                    gridEl.appendChild(cell);
+                    grid[i][j] = {
+                        element: cell,
+                        visited: false,
+                        parent: null
+                    };
+                }
+            }
+        }
+        
+        function getNeighbors(row, col) {
+            const neighbors = [];
+            const directions = [[0,1], [1,0], [0,-1], [-1,0]]; // sağ, aşağı, sol, yuxarı
+            
+            for (const [dr, dc] of directions) {
+                const newRow = row + dr;
+                const newCol = col + dc;
+                
+                if (newRow >= 0 && newRow < ROWS && 
+                    newCol >= 0 && newCol < COLS && 
+                    maze[newRow][newCol] === 0 && 
+                    !grid[newRow][newCol].visited) {
+                    neighbors.push({row: newRow, col: newCol});
+                }
+            }
+            
+            return neighbors;
+        }
+        
+        async function startBFS() {
+            if (isRunning) return;
+            isRunning = true;
+            resetGrid();
+            
+            document.getElementById('algorithm').textContent = 'BFS';
+            document.getElementById('status').textContent = 'İşləyir...';
+            
+            const queue = [{row: start.row, col: start.col}];
+            grid[start.row][start.col].visited = true;
+            let visitedCount = 1;
+            
+            while (queue.length > 0) {
+                const current = queue.shift(); // Queue - əvvəldən götür
+                const cell = grid[current.row][current.col];
+                
+                // Cari xananı göstər
+                if (!(current.row === start.row && current.col === start.col)) {
+                    cell.element.classList.add('current');
+                    await sleep(100);
+                    cell.element.classList.remove('current');
+                    
+                    if (!(current.row === end.row && current.col === end.col)) {
+                        cell.element.classList.add('visited');
+                    }
+                }
+                
+                // Hədəfə çatdıqsa
+                if (current.row === end.row && current.col === end.col) {
+                    await drawPath(current);
+                    document.getElementById('status').textContent = '✓ Tapıldı!';
+                    isRunning = false;
+                    return;
+                }
+                
+                // Qonşuları növbəyə əlavə et
+                const neighbors = getNeighbors(current.row, current.col);
+                for (const neighbor of neighbors) {
+                    grid[neighbor.row][neighbor.col].visited = true;
+                    grid[neighbor.row][neighbor.col].parent = current;
+                    queue.push(neighbor);
+                    visitedCount++;
+                    document.getElementById('visited').textContent = visitedCount;
+                }
+            }
+            
+            document.getElementById('status').textContent = '✗ Yol tapılmadı';
+            isRunning = false;
+        }
+        
+        async function startDFS() {
+            if (isRunning) return;
+            isRunning = true;
+            resetGrid();
+            
+            document.getElementById('algorithm').textContent = 'DFS';
+            document.getElementById('status').textContent = 'İşləyir...';
+            
+            const stack = [{row: start.row, col: start.col}];
+            grid[start.row][start.col].visited = true;
+            let visitedCount = 1;
+            
+            while (stack.length > 0) {
+                const current = stack.pop(); // Stack - sondan götür
+                const cell = grid[current.row][current.col];
+                
+                // Cari xananı göstər
+                if (!(current.row === start.row && current.col === start.col)) {
+                    cell.element.classList.add('current');
+                    await sleep(100);
+                    cell.element.classList.remove('current');
+                    
+                    if (!(current.row === end.row && current.col === end.col)) {
+                        cell.element.classList.add('visited');
+                    }
+                }
+                
+                // Hədəfə çatdıqsa
+                if (current.row === end.row && current.col === end.col) {
+                    await drawPath(current);
+                    document.getElementById('status').textContent = '✓ Tapıldı!';
+                    isRunning = false;
+                    return;
+                }
+                
+                // Qonşuları stack-ə əlavə et
+                const neighbors = getNeighbors(current.row, current.col);
+                for (const neighbor of neighbors) {
+                    grid[neighbor.row][neighbor.col].visited = true;
+                    grid[neighbor.row][neighbor.col].parent = current;
+                    stack.push(neighbor);
+                    visitedCount++;
+                    document.getElementById('visited').textContent = visitedCount;
+                }
+            }
+            
+            document.getElementById('status').textContent = '✗ Yol tapılmadı';
+            isRunning = false;
+        }
+        
+        async function drawPath(endNode) {
+            const path = [];
+            let current = endNode;
+            
+            while (current !== null) {
+                path.unshift(current);
+                current = grid[current.row][current.col].parent;
+            }
+            
+            for (let i = 1; i < path.length - 1; i++) {
+                const cell = grid[path[i].row][path[i].col];
+                cell.element.classList.remove('visited');
+                cell.element.classList.add('path');
+                await sleep(50);
+            }
+            
+            document.getElementById('pathLength').textContent = path.length;
+        }
+        
+        function resetGrid() {
+            initGrid();
+            document.getElementById('algorithm').textContent = '-';
+            document.getElementById('visited').textContent = '0';
+            document.getElementById('pathLength').textContent = '0';
+            document.getElementById('status').textContent = 'Gözləyir';
+            isRunning = false;
+        }
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        // Səhifə yükləndikdə grid-i başlat
+        initGrid();
+    </script>
+</body>
+</html>
